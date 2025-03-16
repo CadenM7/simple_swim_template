@@ -38,7 +38,7 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 impl Default for SwimInterface {
     fn default() -> Self {
         Self {
-            letters: ['A'; BUFFER_WIDTH],
+            letters: ['_'; BUFFER_WIDTH],
             num_letters: 1,
             next_letter: 1,
             col: BUFFER_WIDTH / 2,
@@ -69,7 +69,7 @@ impl SwimInterface {
                 self.letters[i],
                 x,
                 self.row,
-                ColorCode::new(Color::Cyan, Color::Black),
+                ColorCode::new(Color::White, Color::Black),
             );
         }
     }
@@ -83,6 +83,16 @@ impl SwimInterface {
 
     fn handle_raw(&mut self, key: KeyCode) {
         match key {
+            KeyCode:: Return => {
+                self.clear_current();
+                self.row = add1::<BUFFER_WIDTH>(self.row);
+                self.draw_current();
+            }
+            KeyCode::Backspace => {
+                self.clear_current();
+                self.col = sub1::<BUFFER_WIDTH>(self.col);
+                self.draw_current();
+            }
             _ => {}
         }
     }
