@@ -16,7 +16,7 @@ use core::{
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct SwimInterface {
-    letters: [char; BUFFER_WIDTH],
+    letters: [[char; BUFFER_WIDTH]; BUFFER_HEIGHT],
     num_letters: usize,
     next_letter: usize,
     col: usize,
@@ -38,11 +38,11 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 impl Default for SwimInterface {
     fn default() -> Self {
         Self {
-            letters: ['_'; BUFFER_WIDTH],
+            letters: [['_'; BUFFER_WIDTH]; BUFFER_HEIGHT],
             num_letters: 1,
             next_letter: 0,
-            col: BUFFER_WIDTH / 2,
-            row: BUFFER_HEIGHT / 2,
+            col: 1,
+            row: 1,
         }
     }
 }
@@ -66,7 +66,7 @@ impl SwimInterface {
     fn draw_current(&self) {
         for (i, x) in self.letter_columns().enumerate() {
             plot(
-                self.letters[i],
+                self.letters[self.row][i],
                 x,
                 self.row,
                 ColorCode::new(Color::White, Color::Black),
@@ -89,12 +89,13 @@ impl SwimInterface {
 
     fn handle_unicode(&mut self, key: char) {
         if is_drawable(key) {
-            self.letters[self.next_letter] = key;
+            self.letters[self.row][self.next_letter] = key;
             self.next_letter = add1::<BUFFER_WIDTH>(self.next_letter);
             self.num_letters = min(self.num_letters + 1, BUFFER_WIDTH);
 
-            if self.next_letter == self.row {
+            if self.next_letter == BUFFER_WIDTH - 1 {
                 self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
+                self.num_letters = 0
             }
 
         }
@@ -102,8 +103,9 @@ impl SwimInterface {
             self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
             self.num_letters = 1;
             self.next_letter = 0;
-            self.letters = ['_'; BUFFER_WIDTH];
+            self.letters[self.row] = ['_'; BUFFER_WIDTH]; 
             self.draw_current();
         }
     }
 }
+
