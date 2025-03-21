@@ -40,7 +40,7 @@ impl Default for SwimInterface {
         Self {
             letters: ['_'; BUFFER_WIDTH],
             num_letters: 1,
-            next_letter: 1,
+            next_letter: 0,
             col: BUFFER_WIDTH / 2,
             row: BUFFER_HEIGHT / 2,
         }
@@ -83,16 +83,6 @@ impl SwimInterface {
 
     fn handle_raw(&mut self, key: KeyCode) {
         match key {
-            KeyCode:: Return => {
-                self.clear_current();
-                self.row = add1::<BUFFER_WIDTH>(self.row);
-                self.draw_current();
-            }
-            KeyCode::Backspace => {
-                self.clear_current();
-                self.col = sub1::<BUFFER_WIDTH>(self.col);
-                self.draw_current();
-            }
             _ => {}
         }
     }
@@ -102,6 +92,18 @@ impl SwimInterface {
             self.letters[self.next_letter] = key;
             self.next_letter = add1::<BUFFER_WIDTH>(self.next_letter);
             self.num_letters = min(self.num_letters + 1, BUFFER_WIDTH);
+
+            if self.next_letter == self.row {
+                self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
+            }
+
+        }
+        if key =='\n' {
+            self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
+            self.num_letters = 1;
+            self.next_letter = 0;
+            self.letters = ['_'; BUFFER_WIDTH];
+            self.draw_current();
         }
     }
 }
