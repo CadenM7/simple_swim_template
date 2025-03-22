@@ -69,7 +69,7 @@ impl SwimInterface {
                 self.letters[self.row][i],
                 x,
                 self.row,
-                ColorCode::new(Color::White, Color::Black),
+                ColorCode::new(Color::Green, Color::Black),
             );
         }
     }
@@ -95,7 +95,7 @@ impl SwimInterface {
 
             if self.next_letter == BUFFER_WIDTH - 1 {
                 self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
-                self.num_letters = 0
+                self.num_letters = 0;
             }
 
         }
