@@ -14,14 +14,25 @@ use core::{
     prelude::rust_2024::derive,
 };
 
+const NUM_WINDOWS: usize = 4;
+
 #[derive(Copy, Clone, Eq, PartialEq)]
+struct Window {
+    top: usize,
+    left: usize,
+    bottom: usize,
+    right: usize,
+}
 pub struct SwimInterface {
-    letters: [[char; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    letters: [[[char; BUFFER_WIDTH]; BUFFER_HEIGHT];NUM_WINDOWS],
     num_letters: usize,
     next_letter: usize,
+    active_window: usize,
+    windows: [Window; NUM_WINDOWS],
     col: usize,
     row: usize,
 }
+
 
 pub fn safe_add<const LIMIT: usize>(a: usize, b: usize) -> usize {
     (a + b).mod_floor(&LIMIT)
@@ -38,7 +49,14 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 impl Default for SwimInterface {
     fn default() -> Self {
         Self {
-            letters: [['_'; BUFFER_WIDTH]; BUFFER_HEIGHT],
+            letters: [[[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT]; NUM_WINDOWS],
+            active_window: 0,
+            windows: [
+                Window { top: 0, left: 0, bottom: (BUFFER_HEIGHT / 2) - 1, right: (BUFFER_WIDTH / 2) - 1 },
+                Window { top: 0, left: BUFFER_HEIGHT / 2, bottom: (BUFFER_HEIGHT / 2), right: BUFFER_WIDTH - 1 }, 
+                Window { top: BUFFER_HEIGHT / 2, left: 0, bottom: BUFFER_HEIGHT - 1, right: (BUFFER_WIDTH) - 1 }, 
+                Window { top: BUFFER_HEIGHT / 2, left: BUFFER_HEIGHT / 2, bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
+            ],
             num_letters: 1,
             next_letter: 0,
             col: 1,
@@ -66,7 +84,7 @@ impl SwimInterface {
     fn draw_current(&self) {
         for (i, x) in self.letter_columns().enumerate() {
             plot(
-                self.letters[self.row][i],
+                self.letters[self.row][i][self.next_letter],
                 x,
                 self.row,
                 ColorCode::new(Color::Green, Color::Black),
@@ -89,7 +107,7 @@ impl SwimInterface {
 
     fn handle_unicode(&mut self, key: char) {
         if is_drawable(key) {
-            self.letters[self.row][self.next_letter] = key;
+            self.letters[self.active_window][self.row][self.next_letter] = key;
             self.next_letter = add1::<BUFFER_WIDTH>(self.next_letter);
             self.num_letters = min(self.num_letters + 1, BUFFER_WIDTH);
 
@@ -103,9 +121,20 @@ impl SwimInterface {
             self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
             self.num_letters = 1;
             self.next_letter = 0;
-            self.letters[self.row] = ['_'; BUFFER_WIDTH]; 
+            self.letters[self.active_window][self.row] = ['_'; BUFFER_WIDTH]; 
             self.draw_current();
         }
     }
+
+    fn draw_window(&self, index: usize) {
+        let window = self.windows[index];
+        let color = if index == self.active_window {
+            ColorCode::new(Color::Green, Color::Black)
+        } else {
+            ColorCode::new(Color::White, Color::Black)
+        };
+    }
+
 }
+    
 
