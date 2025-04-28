@@ -66,13 +66,15 @@ impl SwimInterface {
     fn draw_current(&self) {
         for (i, x) in self.letter_columns().enumerate() {
             plot(
-                self.letters[self.row][i],
+                self.letters[self.row + 1][i],
                 x,
-                self.row,
+                self.row + 1,
                 ColorCode::new(Color::Green, Color::Black),
             );
         }
     }
+
+    
 
     pub fn key(&mut self, key: DecodedKey) {
         match key {
@@ -109,3 +111,40 @@ impl SwimInterface {
     }
 }
 
+pub struct Windows {
+    col: usize,
+    row: usize,
+    width: usize,
+    height: usize,
+    active_window: usize,
+}
+
+impl Default for Windows {
+    fn default() -> Self {
+        Self {
+            col: 1,
+            row: 1,
+            width: BUFFER_WIDTH - 2,
+            height: BUFFER_HEIGHT - 2,
+            active_window: 0,
+        }
+    }
+}
+
+impl Windows {
+
+    pub fn draw_border(&self) {
+        for x in self.col..self.col + self.width {
+            plot('.', x, self.row, ColorCode::new(Color::White, Color::Black));
+            plot('.', x, self.row + self.height - 1, ColorCode::new(Color::White, Color::Black));
+        }
+        for y in self.row..self.row + self.height {
+            plot('.', self.col, y, ColorCode::new(Color::White, Color::Black));
+            plot('.', self.col + self.width - 1, y, ColorCode::new(Color::White, Color::Black));
+        }
+    }
+
+    pub fn draw(&self, key: char) {
+        
+    }
+}
