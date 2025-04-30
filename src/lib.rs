@@ -89,7 +89,7 @@ impl SwimInterface {
         if active == self.active_window {
             color = ColorCode::new(Color::Green, Color::Black);
         } else {
-            color = ColorCode::new(Color::White, Color::Black);
+            color = ColorCode::new(Color::Black, Color::Black);
         }
 
         for x in window.left..=window.right {
