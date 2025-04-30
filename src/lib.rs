@@ -17,21 +17,21 @@ use core::{
 const NUM_WINDOWS: usize = 4;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
-pub struct Window {
+struct Window {
     top: usize,
     left: usize,
     bottom: usize,
     right: usize,
-    windows: usize,
-    active_window: usize,
 
 }
 pub struct SwimInterface {
-    letters: [[char; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    letters: [[[char; BUFFER_WIDTH]; BUFFER_HEIGHT];NUM_WINDOWS],
     num_letters: usize,
     next_letter: usize,
     col: usize,
     row: usize,
+    windows: [Window; NUM_WINDOWS],
+    active_window: usize,
 }
 
 pub fn safe_add<const LIMIT: usize>(a: usize, b: usize) -> usize {
@@ -49,11 +49,18 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 impl Default for SwimInterface {
     fn default() -> Self {
         Self {
-            letters: [[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT],
+            letters: [[[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT]; NUM_WINDOWS],
             num_letters: 1,
             next_letter: 0,
             col: 1,
             row: 1,
+            windows: [
+                Window { top: 0, left: 0, bottom: 10, right: 20 },
+                Window { top: 11, left: 0, bottom: 20, right: 20 },
+                Window { top: 21, left: 0, bottom: 30, right: 20 },
+                Window { top: 31, left: 0, bottom: 40, right: 20 },
+            ],
+            active_window: 0,
         }
     }
 }
@@ -76,7 +83,7 @@ impl SwimInterface {
     fn draw_current(&self) {
         for (i, x) in self.letter_columns().enumerate() {
             plot(
-                self.letters[i][self.next_letter],
+                self.letters[self.active_window][i][self.next_letter],
                 x,
                 self.row,
                 ColorCode::new(Color::Green, Color::Black),
@@ -117,53 +124,6 @@ impl SwimInterface {
             self.draw_current();
         }
     }
-}
-
-impl  Window {
-    pub fn new() -> Self {
-        Self {
-            top: 0,
-            left: 0,
-            bottom: BUFFER_HEIGHT - 1,
-            right: BUFFER_WIDTH - 1,
-            windows: NUM_WINDOWS,
-            active_window: 0,
-        }
-    }
-
-    pub fn draw_window(&self) {
-        for i in self.top..=self.bottom {
-            for j in self.left..=self.right {
-                plot(' ', j, i, ColorCode::new(Color::Green, Color::Black));
-            }
-        }
-    }
-    pub fn tick(&mut self) {
-        self.draw_window();
-    }
-
-    pub fn key(&mut self, key: DecodedKey) {
-        match key {
-            DecodedKey::RawKey(code) => self.handle_raw(code),
-            DecodedKey::Unicode(c) => self.handle_unicode(c),
-        }
-    }
-
-    fn handle_raw(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::F1 => {self.active_window = 0;}
-            KeyCode::F2 => {self.active_window = 1;}
-            KeyCode::F3 => {self.active_window = 2;}
-            KeyCode::F4 => {self.active_window = 3;}
-            _ => {}
-        }
-    }
-    fn handle_unicode(&mut self, key: char) {
-        if is_drawable(key) {
-            
-        }
-    }
-    
 }
     
 
