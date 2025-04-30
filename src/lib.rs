@@ -17,22 +17,22 @@ use core::{
 const NUM_WINDOWS: usize = 4;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
-struct Window {
+pub struct Window {
     top: usize,
     left: usize,
     bottom: usize,
     right: usize,
+    windows: usize,
+    active_window: usize,
+
 }
 pub struct SwimInterface {
-    letters: [[[char; BUFFER_WIDTH]; BUFFER_HEIGHT];NUM_WINDOWS],
+    letters: [[char; BUFFER_WIDTH]; BUFFER_HEIGHT],
     num_letters: usize,
     next_letter: usize,
-    active_window: usize,
-    windows: [Window; NUM_WINDOWS],
     col: usize,
     row: usize,
 }
-
 
 pub fn safe_add<const LIMIT: usize>(a: usize, b: usize) -> usize {
     (a + b).mod_floor(&LIMIT)
@@ -49,14 +49,7 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 impl Default for SwimInterface {
     fn default() -> Self {
         Self {
-            letters: [[[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT]; NUM_WINDOWS],
-            active_window: 0,
-            windows: [
-                Window { top: 0, left: 0, bottom: (BUFFER_HEIGHT / 2) - 1, right: (BUFFER_WIDTH / 2) - 1 },
-                Window { top: 0, left: BUFFER_HEIGHT / 2, bottom: (BUFFER_HEIGHT / 2), right: BUFFER_WIDTH - 1 }, 
-                Window { top: BUFFER_HEIGHT / 2, left: 0, bottom: BUFFER_HEIGHT - 1, right: (BUFFER_WIDTH) - 1 }, 
-                Window { top: BUFFER_HEIGHT / 2, left: BUFFER_HEIGHT / 2, bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
-            ],
+            letters: [[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT],
             num_letters: 1,
             next_letter: 0,
             col: 1,
@@ -69,7 +62,6 @@ impl SwimInterface {
     fn letter_columns(&self) -> impl Iterator<Item = usize> + '_ {
         (0..self.num_letters).map(|n| safe_add::<BUFFER_WIDTH>(n, self.col))
     }
-
     pub fn tick(&mut self) {
         self.clear_current();
         self.draw_current();
@@ -84,7 +76,7 @@ impl SwimInterface {
     fn draw_current(&self) {
         for (i, x) in self.letter_columns().enumerate() {
             plot(
-                self.letters[self.row][i][self.next_letter],
+                self.letters[i][self.next_letter],
                 x,
                 self.row,
                 ColorCode::new(Color::Green, Color::Black),
@@ -107,7 +99,7 @@ impl SwimInterface {
 
     fn handle_unicode(&mut self, key: char) {
         if is_drawable(key) {
-            self.letters[self.active_window][self.row][self.next_letter] = key;
+            self.letters[self.row][self.next_letter] = key;
             self.next_letter = add1::<BUFFER_WIDTH>(self.next_letter);
             self.num_letters = min(self.num_letters + 1, BUFFER_WIDTH);
 
@@ -121,20 +113,57 @@ impl SwimInterface {
             self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
             self.num_letters = 1;
             self.next_letter = 0;
-            self.letters[self.active_window][self.row] = ['_'; BUFFER_WIDTH]; 
+            self.letters[self.row] = ['_'; BUFFER_WIDTH]; 
             self.draw_current();
         }
     }
+}
 
-    fn draw_window(&self, index: usize) {
-        let window = self.windows[index];
-        let color = if index == self.active_window {
-            ColorCode::new(Color::Green, Color::Black)
-        } else {
-            ColorCode::new(Color::White, Color::Black)
-        };
+impl  Window {
+    pub fn new() -> Self {
+        Self {
+            top: 0,
+            left: 0,
+            bottom: BUFFER_HEIGHT - 1,
+            right: BUFFER_WIDTH - 1,
+            windows: NUM_WINDOWS,
+            active_window: 0,
+        }
     }
 
+    pub fn draw_window(&self) {
+        for i in self.top..=self.bottom {
+            for j in self.left..=self.right {
+                plot(' ', j, i, ColorCode::new(Color::Green, Color::Black));
+            }
+        }
+    }
+    pub fn tick(&mut self) {
+        self.draw_window();
+    }
+
+    pub fn key(&mut self, key: DecodedKey) {
+        match key {
+            DecodedKey::RawKey(code) => self.handle_raw(code),
+            DecodedKey::Unicode(c) => self.handle_unicode(c),
+        }
+    }
+
+    fn handle_raw(&mut self, key: KeyCode) {
+        match key {
+            KeyCode::F1 => {self.active_window = 0;}
+            KeyCode::F2 => {self.active_window = 1;}
+            KeyCode::F3 => {self.active_window = 2;}
+            KeyCode::F4 => {self.active_window = 3;}
+            _ => {}
+        }
+    }
+    fn handle_unicode(&mut self, key: char) {
+        if is_drawable(key) {
+            
+        }
+    }
+    
 }
     
 
