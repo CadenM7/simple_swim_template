@@ -71,8 +71,8 @@ impl SwimInterface {
     }
     pub fn tick(&mut self) {
         self.clear_current();
-        self.draw_current();
         self.draw_all_windows();
+        self.draw_current();
     }
 
     fn clear_current(&self) {
@@ -85,9 +85,9 @@ impl SwimInterface {
         let window = self.windows[active];
         let mut color = ColorCode::new(Color::Black, Color::Black);
         if active == self.active_window {
-            color = ColorCode::new(Color::Green, Color::Black);
+            color = ColorCode::new(Color::Black, Color::Green);
         } else {
-            color = ColorCode::new(Color::Black, Color::Black);
+            color = ColorCode::new(Color::Green, Color::Black);
         }
 
         for x in window.left..=window.right {
