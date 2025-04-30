@@ -48,6 +48,8 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 
 impl Default for SwimInterface {
     fn default() -> Self {
+        let mid_x = BUFFER_WIDTH / 2;
+        let mid_y = BUFFER_HEIGHT / 2;
         Self {
             letters: [[[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT]; NUM_WINDOWS],
             num_letters: 1,
@@ -55,10 +57,10 @@ impl Default for SwimInterface {
             col: 1,
             row: 1,
             windows: [
-                Window { top: 0, left: 0, bottom: 10, right: 20 },
-                Window { top: 11, left: 0, bottom: 20, right: 20 },
-                Window { top: 21, left: 0, bottom: 30, right: 20 },
-                Window { top: 31, left: 0, bottom: 40, right: 20 },
+                Window { top: 0, left: 0, bottom: mid_y - 1, right: mid_x - 1 },
+                Window { top: 0, left: mid_x, bottom: mid_y - 1, right: BUFFER_WIDTH - 1 },
+                Window { top: mid_y, left: 0, bottom: BUFFER_HEIGHT - 1, right: mid_x - 1 },
+                Window { top: mid_y, left: mid_x, bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
             ],
             active_window: 0,
         }
@@ -72,6 +74,7 @@ impl SwimInterface {
     pub fn tick(&mut self) {
         self.clear_current();
         self.draw_current();
+        self.draw_all_windows();
     }
 
     fn clear_current(&self) {
@@ -79,6 +82,32 @@ impl SwimInterface {
             plot(' ', x, self.row, ColorCode::new(Color::Black, Color::Black));
         }
     }
+
+    fn draw_window(&self, active: usize) {
+        let window = self.windows[active];
+        let mut color = ColorCode::new(Color::Black, Color::Black);
+        if active == self.active_window {
+            color = ColorCode::new(Color::Green, Color::Black);
+        } else {
+            color = ColorCode::new(Color::White, Color::Black);
+        }
+
+        for x in window.left..=window.right {
+            plot('.', x, window.top, color);
+            plot('.', x, window.bottom, color);
+        }
+        for y in window.top..=window.bottom {
+            plot('.', window.left, y, color);
+            plot('.', window.right, y, color);
+        }
+    }
+
+    pub fn draw_all_windows(&self) {
+        for i in 0..NUM_WINDOWS {
+            self.draw_window(i);
+        }
+    }
+
 
     fn draw_current(&self) {
         for (i, x) in self.letter_columns().enumerate() {
@@ -100,13 +129,17 @@ impl SwimInterface {
 
     fn handle_raw(&mut self, key: KeyCode) {
         match key {
+            KeyCode::F1 => self.active_window = 0,
+            KeyCode::F2 => self.active_window = 1,
+            KeyCode::F3 => self.active_window = 2,
+            KeyCode::F4 => self.active_window = 3,
             _ => {}
         }
     }
 
     fn handle_unicode(&mut self, key: char) {
         if is_drawable(key) {
-            self.letters[self.row][self.next_letter] = key;
+            self.letters[self.active_window][self.row][self.next_letter] = key;
             self.next_letter = add1::<BUFFER_WIDTH>(self.next_letter);
             self.num_letters = min(self.num_letters + 1, BUFFER_WIDTH);
 
@@ -120,10 +153,11 @@ impl SwimInterface {
             self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
             self.num_letters = 1;
             self.next_letter = 0;
-            self.letters[self.row] = ['_'; BUFFER_WIDTH]; 
+            self.letters[self.active_window][self.row] = ['_'; BUFFER_WIDTH]; 
             self.draw_current();
         }
     }
 }
+
     
 
