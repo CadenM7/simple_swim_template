@@ -48,8 +48,6 @@ pub fn sub1<const LIMIT: usize>(value: usize) -> usize {
 
 impl Default for SwimInterface {
     fn default() -> Self {
-        let mid_x = BUFFER_WIDTH / 2;
-        let mid_y = BUFFER_HEIGHT / 2;
         Self {
             letters: [[[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT]; NUM_WINDOWS],
             num_letters: 1,
@@ -57,10 +55,10 @@ impl Default for SwimInterface {
             col: 1,
             row: 1,
             windows: [
-                Window { top: 0, left: 0, bottom: mid_y - 1, right: mid_x - 1 },
-                Window { top: 0, left: mid_x, bottom: mid_y - 1, right: BUFFER_WIDTH - 1 },
-                Window { top: mid_y, left: 0, bottom: BUFFER_HEIGHT - 1, right: mid_x - 1 },
-                Window { top: mid_y, left: mid_x, bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
+                Window { top: 0, left: 0, bottom: (BUFFER_HEIGHT / 2) - 1, right: (BUFFER_WIDTH / 2) - 1 },
+                Window { top: 0, left: (BUFFER_WIDTH / 2), bottom: (BUFFER_HEIGHT / 2) - 1, right: BUFFER_WIDTH - 1 },
+                Window { top: (BUFFER_HEIGHT / 2), left: 0, bottom: BUFFER_HEIGHT - 1, right: (BUFFER_WIDTH / 2) - 1 },
+                Window { top: (BUFFER_HEIGHT / 2), left: (BUFFER_WIDTH / 2), bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
             ],
             active_window: 0,
         }
