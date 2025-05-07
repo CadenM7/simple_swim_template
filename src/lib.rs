@@ -15,6 +15,9 @@ use core::{
 };
 
 const NUM_WINDOWS: usize = 4;
+const COL: usize = BUFFER_HEIGHT / 2;
+const ROW: usize = BUFFER_WIDTH / 2;
+
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 struct Window {
@@ -26,10 +29,10 @@ struct Window {
 }
 pub struct SwimInterface {
     letters: [[[char; BUFFER_WIDTH]; BUFFER_HEIGHT];NUM_WINDOWS],
-    num_letters: usize,
-    next_letter: usize,
-    col: usize,
-    row: usize,
+    num_letters: [usize; NUM_WINDOWS],
+    next_letter: [usize; NUM_WINDOWS],
+    col: [usize; NUM_WINDOWS],
+    row: [usize; NUM_WINDOWS],
     windows: [Window; NUM_WINDOWS],
     active_window: usize,
 }
@@ -50,15 +53,15 @@ impl Default for SwimInterface {
     fn default() -> Self {
         Self {
             letters: [[[ '_' ; BUFFER_WIDTH]; BUFFER_HEIGHT]; NUM_WINDOWS],
-            num_letters: 1,
-            next_letter: 0,
-            col: 1,
-            row: 1,
+            num_letters: [1; NUM_WINDOWS], 
+            next_letter: [0; NUM_WINDOWS],
+            col: [1; NUM_WINDOWS],
+            row: [1; NUM_WINDOWS],
             windows: [
-                Window { top: 0, left: 0, bottom: (BUFFER_HEIGHT / 2) - 1, right: (BUFFER_WIDTH / 2) - 1 },
-                Window { top: 0, left: (BUFFER_WIDTH / 2), bottom: (BUFFER_HEIGHT / 2) - 1, right: BUFFER_WIDTH - 1 },
-                Window { top: (BUFFER_HEIGHT / 2), left: 0, bottom: BUFFER_HEIGHT - 1, right: (BUFFER_WIDTH / 2) - 1 },
-                Window { top: (BUFFER_HEIGHT / 2), left: (BUFFER_WIDTH / 2), bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
+                Window { top: 0, left: 0, bottom: COL - 1, right: ROW - 1 },
+                Window { top: 0, left: ROW, bottom: COL - 1, right: BUFFER_WIDTH - 1 },
+                Window { top: COL, left: 0, bottom: BUFFER_HEIGHT - 1, right: ROW - 1 },
+                Window { top: COL, left: ROW, bottom: BUFFER_HEIGHT - 1, right: BUFFER_WIDTH - 1 },
             ],
             active_window: 0,
         }
@@ -67,7 +70,7 @@ impl Default for SwimInterface {
 
 impl SwimInterface {
     fn letter_columns(&self) -> impl Iterator<Item = usize> + '_ {
-        (0..self.num_letters).map(|n| safe_add::<BUFFER_WIDTH>(n, self.col))
+        (0..self.num_letters[self.active_window]).map(|n| safe_add::<BUFFER_WIDTH>(n, self.col[self.active_window]))
     }
     pub fn tick(&mut self) {
         self.clear_current();
@@ -75,15 +78,9 @@ impl SwimInterface {
         self.draw_current();
     }
 
-    fn clear_current(&self) {
-        for x in self.letter_columns() {
-            plot(' ', x, self.row, ColorCode::new(Color::Black, Color::Black));
-        }
-    }
-
     fn draw_window(&self, active: usize) {
         let window = self.windows[active];
-        let mut color = ColorCode::new(Color::Black, Color::Black);
+        let mut color = <ColorCode>::new(Color::Black, Color::Black);
         if active == self.active_window {
             color = ColorCode::new(Color::Black, Color::Green);
         } else {
@@ -98,6 +95,19 @@ impl SwimInterface {
             plot('.', window.left, y, color);
             plot('.', window.right, y, color);
         }
+
+        let header = match active {
+            0 => "F1",
+            1 => "F2",
+            2 => "F3",
+            3 => "F4",
+            _ => "",
+        };
+
+        let center = (window.left + window.right) / 2;
+        for (i, c) in header.chars().enumerate() {
+            plot(c, center + i, window.top, color);
+        }
     }
 
     pub fn draw_all_windows(&self) {
@@ -106,15 +116,34 @@ impl SwimInterface {
         }
     }
 
-
     fn draw_current(&self) {
+        let window = self.windows[self.active_window];
+        let start_row = window.top + self.row[self.active_window];
+        let start_col = window.left + self.col[self.active_window];
+
         for (i, x) in self.letter_columns().enumerate() {
-            plot(
-                self.letters[self.active_window][i][self.next_letter],
-                x,
-                self.row,
-                ColorCode::new(Color::Green, Color::Black),
-            );
+            let col = start_col + x;
+            if col < window.right {
+                plot(
+                    self.letters[self.active_window][self.row[self.active_window]][i],
+                    col,
+                    start_row,
+                    ColorCode::new(Color::Green, Color::Black),
+                );
+            }
+        }
+    }
+
+    fn clear_current(&self) {
+        let window = self.windows[self.active_window];
+        let start_row = window.top + 1 + self.row[self.active_window];
+        let start_col = window.left + 1;
+
+        for x in self.letter_columns() {
+            let col = start_col + x;
+            if col < window.right {
+                plot(' ', col, start_row, ColorCode::new(Color::Black, Color::Black));
+            }
         }
     }
 
@@ -137,21 +166,21 @@ impl SwimInterface {
 
     fn handle_unicode(&mut self, key: char) {
         if is_drawable(key) {
-            self.letters[self.active_window][self.row][self.next_letter] = key;
-            self.next_letter = add1::<BUFFER_WIDTH>(self.next_letter);
-            self.num_letters = min(self.num_letters + 1, BUFFER_WIDTH);
+            self.letters[self.active_window][self.row[self.active_window]][self.next_letter[self.active_window]] = key;
+            self.next_letter[self.active_window] = add1::<BUFFER_WIDTH>(self.next_letter[self.active_window]);
+            self.num_letters[self.active_window] = min(self.num_letters[self.active_window] + 1, BUFFER_WIDTH);
 
-            if self.next_letter == BUFFER_WIDTH - 1 {
-                self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
-                self.num_letters = 0;
+            if self.next_letter[self.active_window] == BUFFER_WIDTH - 1 {
+                self.row[self.active_window] = min(add1::<BUFFER_HEIGHT>(self.row[self.active_window]), BUFFER_HEIGHT - 1);
+                self.num_letters[self.active_window] = 0;
             }
 
         }
         if key =='\n' {
-            self.row = min(add1::<BUFFER_HEIGHT>(self.row), BUFFER_HEIGHT - 1);
-            self.num_letters = 1;
-            self.next_letter = 0;
-            self.letters[self.active_window][self.row] = ['_'; BUFFER_WIDTH]; 
+            self.row[self.active_window] = min(add1::<BUFFER_HEIGHT>(self.row[self.active_window]), BUFFER_HEIGHT - 1);
+            self.num_letters[self.active_window] = 1;
+            self.next_letter[self.active_window] = 0;
+            self.letters[self.active_window][self.row[self.active_window]] = ['_'; BUFFER_WIDTH]; 
             self.draw_current();
         }
     }
